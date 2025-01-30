@@ -40,9 +40,6 @@ window.miniplayer.internal.Setup = async function () {
     private.player = document.querySelector("#miniplayer_player");
     const playerSource = document.createElement("source");
     playerSource.src = private.initData.sourceUrl;
-    if ("sourceMimeType" in private.initData) {
-        playerSource.type = private.initData.sourceMimeType;
-    }
     private.player.appendChild(playerSource);
 
     private.FetchImage = async function (url) {
@@ -64,10 +61,12 @@ window.miniplayer.internal.Setup = async function () {
         if (index in private.scrubs) {
             return private.scrubs[index];
         } else {
-            const y = Math.floor(index / private.initData.scrubSheetWidth);
-            const x = index - (y * private.initData.scrubSheetWidth);
-            const width = private.scrubSheet.width / private.initData.scrubSheetWidth;
-            const height = private.scrubSheet.height / private.initData.scrubSheetHeight;
+            const duration = private.player.duration;
+            const size = Math.ceil(Math.sqrt(duration));
+            const y = Math.floor(index / size);
+            const x = index - (y * size);
+            const width = private.scrubSheet.width / size;
+            const height = private.scrubSheet.height / size;
             private.renderrer.width = width;
             private.renderrer.height = height;
             private.renderrerContext.drawImage(private.scrubSheet, width * x, height * y, width, height, 0, 0, width, height);
@@ -89,9 +88,6 @@ window.miniplayer.internal.Setup = async function () {
     private.scrubShowing = false;
     private.scrubBar.addEventListener("mouseenter", async (event) => {
         if (!private.scrubShowing) {
-            const scrubBarRect = private.scrubBar.getBoundingClientRect();
-            private.scrub.style.top = `${scrubBarRect.top - 100}px`;
-            private.scrub.style.left = `${event.clientX}px`;
             private.scrub.style.display = "block";
             private.scrubShowing = true;
         }
@@ -116,7 +112,10 @@ window.miniplayer.internal.Setup = async function () {
         }
         private.loadingScrub = true;
 
-        private.scrub.style.left = `${event.clientX}px`;
+        const scrubBarRect = private.scrubBar.getBoundingClientRect();
+        private.scrub.style.top = `${scrubBarRect.top - 25 - private.scrub.height}px`;
+        private.scrub.style.left = `${event.clientX - (private.scrub.width / 2)}px`;
+
         const seekTime = private.MouseToSeekTime(event);
         const scrubIndex = Math.floor(seekTime);
         if (private.currentScrubIndex == scrubIndex) {

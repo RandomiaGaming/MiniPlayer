@@ -35,12 +35,9 @@
     <script>
         (async () => {
             await window.miniplayer.Init({
-                sourceUrl: "video.mp4", // Required: The url of to the main content file
-                sourceMimeType: "video/mp4", // Optional: The mime type of the main content file
+                sourceUrl: "rawvideo.webm", // Required: The url of to the main content file
                 isAudioOnly: false, // Optional: Indicates weather this file is a video or audio only
                 scrubSheetUrl: "scrub.jpg", // Optional: The url of the scrub sheet
-                scrubSheetWidth: 16, // The width of the scrub sheet in scrubs
-                scrubSheetHeight: 16, // The height of the scrub sheet in scrubs
                 contentTitle: "WALK THE MOON - Heights (Official Lyric Video)",
             });
         })();
@@ -49,10 +46,16 @@
 
 <body>
     <div id="container">
-        <video class="miniplayer_global" id="miniplayer_player" autoplay></video>
-        <div class="miniplayer_global" id="miniplayer_scrubBar"></div>
-        <image class="miniplayer_global" id="miniplayer_scrub"></image>
-        <canvas class="miniplayer_global" id="miniplayer_renderrer"></canvas>
+        <div class="miniplayer_global" id="miniplayer_container">
+            <div class="miniplayer_global" id="miniplayer_video_container">
+                <video class="miniplayer_global" id="miniplayer_player" autoplay></video>
+            </div>
+            <div class="miniplayer_global" id="miniplayer_controls_container">
+                <div class="miniplayer_global" id="miniplayer_scrubBar"></div>
+            </div>
+            <image class="miniplayer_global" id="miniplayer_scrub"></image>
+            <canvas class="miniplayer_global" id="miniplayer_renderrer"></canvas>
+        </div>
     </div>
 </body>
 

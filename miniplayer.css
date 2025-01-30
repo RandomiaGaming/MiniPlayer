@@ -8,27 +8,50 @@
     color: white;
 }
 
+#miniplayer_container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+#miniplayer_video_container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
 #miniplayer_player {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
+}
+
+#miniplayer_controls_container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 }
 
 #miniplayer_scrubBar {
-    position: relative;
+    position: absolute;
     width: 100%;
     height: 25px;
-    background: #ddd;
-    margin-top: 10px;
+    bottom: 0px;
+    background: #505050;
 }
 
 #miniplayer_scrub {
-    position: absolute;
+    position: fixed;
     display: none;
     width: 144px;
     height: auto;
-    border: 1px solid #ccc;
-    background-color: #000;
+    border: 1px solid #FFFFFF;
+    background-color: #000000;
+    pointer-events: none;
 }
 
 #miniplayer_renderrer {
