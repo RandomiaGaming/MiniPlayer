@@ -39,9 +39,25 @@
 #miniplayer_scrubBar {
     position: absolute;
     width: 100%;
-    height: 25px;
+    height: 2.5%;
     bottom: 0px;
     background: #505050;
+}
+
+#miniplayer_progressBar {
+    position: absolute;
+    width: 0%;
+    height: 40%;
+    bottom: 30%;
+    left: 0px;
+    background: #c70700;
+}
+
+.miniplayer_bufferBar {
+    position: absolute;
+    height: 100%;
+    left: 0px;
+    background: #808080;
 }
 
 #miniplayer_scrub {

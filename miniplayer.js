@@ -113,7 +113,7 @@ window.miniplayer.internal.Setup = async function () {
         private.loadingScrub = true;
 
         const scrubBarRect = private.scrubBar.getBoundingClientRect();
-        private.scrub.style.top = `${scrubBarRect.top - 25 - private.scrub.height}px`;
+        private.scrub.style.top = `${scrubBarRect.top - 15 - private.scrub.height}px`;
         private.scrub.style.left = `${event.clientX - (private.scrub.width / 2)}px`;
 
         const seekTime = private.MouseToSeekTime(event);
@@ -216,32 +216,49 @@ window.miniplayer.internal.Setup = async function () {
         */
         if (event.code == "KeyD" || event.code == "ArrowRight") {
             if (!event.ctrlKey && !event.shiftKey) {
-                private.player.currentTime = private.player.currentTime + 5;
-            } else if (!event.ctrlKey && event.shiftKey) {
-                // TODO next video
-            } else if (private.player.paused) {
-                // TODO skip forward one frame
+                const newTime = private.player.currentTime + 5;
+                private.player.currentTime = Math.min(newTime, private.player.duration);
             }
         } else if (event.code == "KeyA" || event.code == "ArrowLeft") {
             if (!event.ctrlKey && !event.shiftKey) {
-                private.player.currentTime = private.player.currentTime - 5;
-            } else if (!event.ctrlKey && event.shiftKey) {
-                // TODO previous video
-            } else if (private.player.paused) {
-                // TODO skip back one frame
+                const newTime = private.player.currentTime - 5;
+                private.player.currentTime = Math.max(newTime, 0);
             }
         } else if (event.code == "KeyW" || event.code == "ArrowUp") {
             if (!event.ctrlKey && !event.shiftKey) {
-                // TODO volume up 5%
+                const newVolume = private.player.volume + 0.05;
+                private.player.volume = Math.min(newVolume, 1);
             } else if (!event.ctrlKey && event.shiftKey) {
-                // TODO speed up 0.5
+                const newSpeed = private.player.playbackRate + 0.1;
+                private.player.playbackRate = Math.min(newSpeed, 4.0);
             }
         } else if (event.code == "KeyS" || event.code == "ArrowDown") {
             if (!event.ctrlKey && !event.shiftKey) {
-                // TODO volume down 5%
+                const newVolume = private.player.volume - 0.05;
+                private.player.volume = Math.max(newVolume, 0);
             } else if (!event.ctrlKey && event.shiftKey) {
-                // TODO speed down 0.5
+                const newSpeed = private.player.playbackRate - 0.1;
+                private.player.playbackRate = Math.max(newSpeed, 0.1);
             }
         }
+    });
+
+    private.bufferBars = document.querySelectorAll(".miniplayer_bufferBar");
+    private.progressBar = document.querySelector("#miniplayer_progressBar");
+    private.player.addEventListener("progress", function () {
+        for (let i = 0; i < private.bufferBars.length; i++) {
+            if (i < private.player.buffered.length) {
+                const start = (private.player.buffered.start(i) / private.player.duration) * 100.0;
+                const end = (private.player.buffered.end(i) / private.player.duration) * 100.0;
+                private.bufferBars[i].style.left = `${start}%`;
+                private.bufferBars[i].style.width = `${end - start}%`;
+            } else {
+                private.bufferBars[i].style.left = `0%`;
+                private.bufferBars[i].style.width = `0%`;
+            }
+        }
+    });
+    private.player.addEventListener("timeupdate", function () {
+        private.progressBar.style.width = `${private.player.currentTime / private.player.duration * 100.0}%`;
     });
 }
