@@ -3,61 +3,57 @@ if ("miniplayer" in window) {
 }
 window.miniplayer = {};
 window.miniplayer.internal = {};
-window.miniplayer.isInit = false;
-window.miniplayer.isSetup = false;
 
-window.miniplayer.Init = async function (initData) {
+window.miniplayer.Init = function (initData) {
     const private = window.miniplayer.internal;
     const public = window.miniplayer;
 
-    if (public.isInit) {
+    if ("initData" in private) {
         throw new Error("miniplayer.Init has already been called.");
     }
-    public.isInit = true;
+    if (!initData) {
+        throw new Error("No value given for required parameter initData.");
+    }
+    if (!("sourceUrl" in initData)) {
+        throw new Error("No value given for required parameter initData.sourceUrl.");
+    }
     private.initData = initData;
 
     if (document.readyState == "loading") {
-        document.addEventListener("DOMContentLoaded", async () => {
-            await private.Setup();
+        document.addEventListener("DOMContentLoaded", () => {
+            private.Setup();
         });
     } else {
-        await private.Setup();
+        private.Setup();
     }
 }
 
-window.miniplayer.internal.Setup = async function () {
+window.miniplayer.internal.Setup = function () {
     const private = window.miniplayer.internal;
     const public = window.miniplayer;
-
-    if (public.isSetup) {
-        throw new Error("miniplayer.setup has already been called.");
-    }
-    if (document.readyState == "loading") {
-        throw new Error("miniplayer.setup may not be called until the dom content has loaded.");
-    }
-    public.isSetup = true;
 
     private.player = document.querySelector("#miniplayer_player");
     const playerSource = document.createElement("source");
     playerSource.src = private.initData.sourceUrl;
     private.player.appendChild(playerSource);
 
-    private.FetchImage = async function (url) {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        const image = new Image();
-        image.src = blobUrl;
-        return await new Promise(resolve => {
-            image.onload = () => {
-                resolve(image);
-            };
-        });
-    }
-
-    private.scrubSheet = await private.FetchImage(private.initData.scrubSheetUrl);
+    // Scrubs
     private.scrubs = {};
+    private.renderrer = document.querySelector("#miniplayer_renderrer");
+    private.renderrerContext = private.renderrer.getContext("2d");
     private.GetScrub = async function (index) {
+        if (!("scrubSheet" in private)) {
+            const response = await fetch(private.initData.scrubSheetUrl, { priority: "high" });
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const image = new Image();
+            image.src = blobUrl;
+            private.scrubSheet = await new Promise(resolve => {
+                image.onload = () => {
+                    resolve(image);
+                };
+            });
+        }
         if (index in private.scrubs) {
             return private.scrubs[index];
         } else {
@@ -75,35 +71,21 @@ window.miniplayer.internal.Setup = async function () {
             return newScrub;
         }
     }
-
     private.scrubBar = document.querySelector("#miniplayer_scrubBar");
     private.scrub = document.querySelector("#miniplayer_scrub");
-    private.renderrer = document.querySelector("#miniplayer_renderrer");
-    private.renderrerContext = private.renderrer.getContext("2d");
-    private.MouseToSeekTime = function (event) {
-        const scrubBarRect = private.scrubBar.getBoundingClientRect();
-        return ((event.clientX - scrubBarRect.left) * private.player.duration) / scrubBarRect.width;
-    }
-
     private.scrubShowing = false;
-    private.scrubBar.addEventListener("mouseenter", async (event) => {
+    private.scrubBar.addEventListener("mouseenter", () => {
         if (!private.scrubShowing) {
             private.scrub.style.display = "block";
             private.scrubShowing = true;
         }
     });
-
-    private.scrubBar.addEventListener("mouseleave", async (event) => {
+    private.scrubBar.addEventListener("mouseleave", () => {
         if (private.scrubShowing) {
             private.scrub.style.display = "none";
             private.scrubShowing = false;
         }
     });
-
-    private.scrubBar.addEventListener("click", async (event) => {
-        private.player.currentTime = private.MouseToSeekTime(event);
-    });
-
     private.currentScrubIndex = -1;
     private.loadingScrub = false;
     private.scrubBar.addEventListener("mousemove", async (event) => {
@@ -116,7 +98,7 @@ window.miniplayer.internal.Setup = async function () {
         private.scrub.style.top = `${scrubBarRect.top - 15 - private.scrub.height}px`;
         private.scrub.style.left = `${event.clientX - (private.scrub.width / 2)}px`;
 
-        const seekTime = private.MouseToSeekTime(event);
+        const seekTime = ((event.clientX - scrubBarRect.left) * private.player.duration) / scrubBarRect.width;
         const scrubIndex = Math.floor(seekTime);
         if (private.currentScrubIndex == scrubIndex) {
             private.loadingScrub = false;
@@ -134,6 +116,7 @@ window.miniplayer.internal.Setup = async function () {
         private.loadingScrub = false;
     });
 
+    // Keybinds
     window.addEventListener("keydown", async (event) => {
         if (event.code == "Space") {
             if (private.player.paused) {
@@ -191,30 +174,7 @@ window.miniplayer.internal.Setup = async function () {
             private.player.currentTime = (private.player.duration * 8) / 10;
         } else if (event.code == "Digit9" || event.code == "Numpad9") {
             private.player.currentTime = (private.player.duration * 9) / 10;
-        }
-
-        /*
-        Any + Space: Toggle Play/Pause
-        Any + M: Toggle Mute
-        Any + F: Toggle fullscreen
-        Any + L: Toggle Loop
-
-        Any + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]: Skip To Percentage Through Video
-        
-        None + [Up Arrow, W]: Volume Up 5%
-        None + [Down Arrow, S]: Volume Down 5%
-        None + [Right Arrow, D]: Skip Forward 5 Seconds
-        None + [Left Arrow, A]: Skip Backward 5 Seconds
-        
-        Shift + [Right Arrow, D]: Next Video
-        Shift + [Left Arrow, A]: Previous Video
-        Shift + [Up Arrow, W]: Speed Up 0.5 Times
-        Shift + [Down Arrow, S]: Speed Down 0.5 Times
-        
-        Ctrl + [Right Arrow, D]: Skip Forward 1 Frame When Paused
-        Ctrl + [Left Arrow, A]: Skip Backwards 1 Frame When Paused
-        */
-        if (event.code == "KeyD" || event.code == "ArrowRight") {
+        } else if (event.code == "KeyD" || event.code == "ArrowRight") {
             if (!event.ctrlKey && !event.shiftKey) {
                 const newTime = private.player.currentTime + 5;
                 private.player.currentTime = Math.min(newTime, private.player.duration);
@@ -243,6 +203,21 @@ window.miniplayer.internal.Setup = async function () {
         }
     });
 
+    // Mouse Controls
+    private.scrubBar.addEventListener("click", (event) => {
+        const scrubBarRect = private.scrubBar.getBoundingClientRect();
+        private.player.currentTime = ((event.clientX - scrubBarRect.left) * private.player.duration) / scrubBarRect.width;
+    });
+    private.playerCover = document.querySelector("#miniplayer_playerCover");
+    private.playerCover.addEventListener("click", async () => {
+        if (private.player.paused) {
+            await private.player.play();
+        } else {
+            private.player.pause();
+        }
+    });
+
+    // Progress and buffer bars
     private.bufferBars = document.querySelectorAll(".miniplayer_bufferBar");
     private.progressBar = document.querySelector("#miniplayer_progressBar");
     private.player.addEventListener("progress", function () {
